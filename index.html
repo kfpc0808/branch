@@ -130,6 +130,33 @@
     </div>
   </div>
 
+  <!-- 비밀번호 변경 모달 -->
+  <div id="password-change-modal" class="hidden min-h-screen flex items-center justify-center p-4 bg-slate-100">
+    <div class="bg-white p-8 sm:p-12 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
+      <div class="text-center mb-8">
+        <h2 class="text-2xl font-black text-slate-800 mb-2"><i class="fas fa-key text-amber-500 mr-2"></i>비밀번호 변경</h2>
+        <p class="text-slate-500 font-medium">보안을 위해 비밀번호를 변경해주세요.</p>
+      </div>
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-2">새 비밀번호</label>
+          <input type="password" id="new-password" placeholder="새 비밀번호 입력" class="w-full px-4 py-4 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all outline-none font-medium text-lg">
+        </div>
+        <div>
+          <label class="block text-sm font-bold text-slate-600 mb-2">새 비밀번호 확인</label>
+          <input type="password" id="new-password-confirm" placeholder="새 비밀번호 다시 입력" class="w-full px-4 py-4 rounded-xl bg-slate-50 border border-slate-300 focus:bg-white focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all outline-none font-medium text-lg" onkeypress="if(event.key==='Enter') handlePasswordChange()">
+        </div>
+        <button onclick="handlePasswordChange()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-xl transition-all shadow-lg text-lg mt-4">
+          비밀번호 변경하기
+        </button>
+      </div>
+      <div id="pw-change-loading" class="hidden mt-6 text-center text-slate-600 font-medium animate-pulse">
+        <i class="fas fa-circle-notch fa-spin mr-2"></i> 처리 중...
+      </div>
+      <p id="pw-change-error" class="mt-4 text-center text-red-600 font-bold min-h-[24px]"></p>
+    </div>
+  </div>
+
 <div id="main-content" class="max-w-4xl mx-auto px-4 py-10 hidden min-h-screen pb-12 sm:pb-32">
     
 <header class="mb-8" id="user-title-container">
@@ -743,10 +770,18 @@ document.getElementById('corp-admin-pw').innerText = currentUser.corp_admin_pw |
 
       populateMonthSelector(allCommissions);
       
-      document.getElementById('login-container').classList.add('hidden');
-      document.getElementById('main-content').classList.remove('hidden');
-      document.getElementById('main-content').classList.add('animate-fade-in');
-      showTab('account-info');
+      // 비밀번호 변경 여부 체크
+      if (currentUser.pw_changed !== 'true' && currentUser.pw_changed !== true) {
+        // 최초 로그인 - 비밀번호 변경 필요
+        document.getElementById('login-container').classList.add('hidden');
+        document.getElementById('password-change-modal').classList.remove('hidden');
+      } else {
+        // 비밀번호 변경 완료 - 메인 화면으로
+        document.getElementById('login-container').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+        document.getElementById('main-content').classList.add('animate-fade-in');
+        showTab('account-info');
+      }
 }
 
 function copyCorpInquiry() {
@@ -929,6 +964,62 @@ function displayCommissionStatement(month) {
       <p class="text-4xl font-black text-blue-700">₩ ${formatNumber(total.net)}</p>
     </div>
   `;
+}
+
+// 비밀번호 변경 처리
+async function handlePasswordChange() {
+  const newPw = document.getElementById('new-password').value;
+  const newPwConfirm = document.getElementById('new-password-confirm').value;
+  const errorMsg = document.getElementById('pw-change-error');
+  const loading = document.getElementById('pw-change-loading');
+  
+  // 유효성 검사
+  if (!newPw || !newPwConfirm) {
+    errorMsg.innerText = '새 비밀번호를 입력해주세요.';
+    return;
+  }
+  if (newPw !== newPwConfirm) {
+    errorMsg.innerText = '비밀번호가 일치하지 않습니다.';
+    return;
+  }
+  
+  errorMsg.innerText = '';
+  loading.classList.remove('hidden');
+  
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwGVxmH5x1L57Wo3Lp-4FzVILl38cjb870xRkTo2ex_9OfRyN6ND6FtaBNVUo7E6CccCQ/exec";
+  const oldPw = localStorage.getItem('savedPw');
+  
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'changePassword',
+        id: currentUser.id,
+        oldPw: oldPw,
+        newPw: newPw
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // 새 비밀번호로 localStorage 업데이트
+      localStorage.setItem('savedPw', newPw);
+      
+      // 메인 화면으로 이동
+      document.getElementById('password-change-modal').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      document.getElementById('main-content').classList.add('animate-fade-in');
+      showTab('account-info');
+    } else {
+      errorMsg.innerText = data.message;
+    }
+  } catch (error) {
+    errorMsg.innerText = '연결 오류가 발생했습니다.';
+    console.error('Password change error:', error);
+  } finally {
+    loading.classList.add('hidden');
+  }
 }
 
 function formatContent(text) {
