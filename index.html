@@ -740,6 +740,7 @@ function successLogin(user, commissions, notice) {
       currentUser = user;
       allCommissions = commissions || {};
       const noticeData = notice;
+  console.log('notice 데이터:', JSON.stringify(noticeData));
       
       document.title = `${currentUser.name} 지사장님 페이지`;
       document.getElementById('user-title').innerHTML = `${currentUser.name}`;
