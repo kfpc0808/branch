@@ -187,13 +187,25 @@
     
     <div id="account-info" class="tab-content animate-fade-in">
         
-        <div class="info-card border-l-gray-400"> <div class="bg-slate-100 p-5 flex justify-between items-center cursor-pointer hover:bg-slate-200 transition-colors" onclick="toggleAccordion('notice-body')">
+        <div class="info-card border-l-gray-400">
+            <div class="bg-slate-100 p-5 flex justify-between items-center cursor-pointer hover:bg-slate-200 transition-colors" onclick="toggleAccordion('notice-body')">
               <span class="font-bold text-lg text-slate-800 flex items-center gap-3"><i class="fas fa-bullhorn text-red-500"></i> 본사 공지사항 확인</span>
               <i id="notice-body-icon" class="fas fa-chevron-down accordion-icon text-slate-500 text-xl"></i>
             </div>
             <div id="notice-body" class="accordion-content hidden">
               <div class="p-6 border-t border-slate-200">
-                <h3 id="notice-title" class="text-xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-200"></h3>
+                <!-- 공지 네비게이션 -->
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+                    <button onclick="changeNotice(-1)" id="notice-prev-btn" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-chevron-left mr-1"></i> <span id="notice-prev-label">이전</span>
+                    </button>
+                    <span id="notice-counter" class="text-sm font-black text-slate-700"></span>
+                    <button onclick="changeNotice(1)" id="notice-next-btn" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+                        <span id="notice-next-label">다음</span> <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+                <h3 id="notice-title" class="text-xl font-bold text-slate-900 mb-1"></h3>
+                <p id="notice-date" class="text-xs text-slate-400 font-bold mb-4"></p>
                 <div id="notice-content" class="text-slate-700 leading-relaxed text-base"></div>
               </div>
             </div>
@@ -656,6 +668,8 @@
 
 let allCommissions = {};
 let currentUser = {};
+let allNotices = [];
+let currentNoticeIndex = 0;
 
 // 페이지 로드 시 자동 로그인 체크
 window.addEventListener('DOMContentLoaded', () => {
@@ -730,13 +744,16 @@ function successLogin(user, commissions, notice) {
       document.title = `${currentUser.name} 지사장님 페이지`;
       document.getElementById('user-title').innerHTML = `${currentUser.name}`;
       
-      if(noticeData) {
-          document.getElementById('notice-title').innerText = noticeData.title;
-          document.getElementById('notice-content').innerHTML = formatContent(noticeData.content);
+      // 공지사항 처리 (배열 또는 단일 객체 모두 호환)
+      if (Array.isArray(noticeData) && noticeData.length > 0) {
+          allNotices = noticeData;
+      } else if (noticeData && noticeData.title) {
+          allNotices = [noticeData];
       } else {
-          document.getElementById('notice-title').innerText = "현재 등록된 공지사항이 없습니다.";
-          document.getElementById('notice-content').innerHTML = "새로운 소식이 있으면 이곳에 표시됩니다.";
+          allNotices = [];
       }
+      currentNoticeIndex = 0;
+      displayNotice();
 
       // [FP센터 정보]
       document.getElementById('fp-id').innerText = currentUser.fp_id;
@@ -1034,6 +1051,77 @@ async function handlePasswordChange() {
   } finally {
     loading.classList.add('hidden');
   }
+}
+
+function displayNotice() {
+    const titleEl = document.getElementById('notice-title');
+    const dateEl = document.getElementById('notice-date');
+    const contentEl = document.getElementById('notice-content');
+    const counterEl = document.getElementById('notice-counter');
+    const prevBtn = document.getElementById('notice-prev-btn');
+    const nextBtn = document.getElementById('notice-next-btn');
+    const prevLabel = document.getElementById('notice-prev-label');
+    const nextLabel = document.getElementById('notice-next-label');
+
+    if (allNotices.length === 0) {
+        titleEl.innerText = "현재 등록된 공지사항이 없습니다.";
+        dateEl.innerText = "";
+        contentEl.innerHTML = "새로운 소식이 있으면 이곳에 표시됩니다.";
+        counterEl.innerText = "";
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        prevLabel.innerText = "";
+        nextLabel.innerText = "";
+        return;
+    }
+
+    const notice = allNotices[currentNoticeIndex];
+    titleEl.innerText = notice.title;
+    dateEl.innerText = notice.date || '';
+    contentEl.innerHTML = formatContent(notice.content);
+
+    // 현재 공지 월 표시
+    counterEl.innerText = getNoticeMonthLabel(notice);
+
+    // 이전 버튼 (더 오래된 공지)
+    if (currentNoticeIndex < allNotices.length - 1) {
+        prevBtn.disabled = false;
+        prevLabel.innerText = getNoticeMonthLabel(allNotices[currentNoticeIndex + 1]);
+    } else {
+        prevBtn.disabled = true;
+        prevLabel.innerText = "";
+    }
+
+    // 다음 버튼 (더 최신 공지)
+    if (currentNoticeIndex > 0) {
+        nextBtn.disabled = false;
+        nextLabel.innerText = getNoticeMonthLabel(allNotices[currentNoticeIndex - 1]);
+    } else {
+        nextBtn.disabled = true;
+        nextLabel.innerText = "";
+    }
+}
+
+function getNoticeMonthLabel(notice) {
+    if (notice.date) {
+        const parts = notice.date.split('-');
+        if (parts.length >= 2) {
+            return parseInt(parts[1], 10) + '월 공지사항';
+        }
+    }
+    const monthMatch = notice.title.match(/(\d{1,2})월/);
+    if (monthMatch) {
+        return monthMatch[1] + '월 공지사항';
+    }
+    return notice.title;
+}
+
+function changeNotice(direction) {
+    const newIndex = currentNoticeIndex - direction;
+    if (newIndex >= 0 && newIndex < allNotices.length) {
+        currentNoticeIndex = newIndex;
+        displayNotice();
+    }
 }
 
 function formatContent(text) {
