@@ -1107,7 +1107,7 @@ function getNoticeMonthLabel(notice) {
     if (notice.date) {
         const parts = notice.date.split('-');
         if (parts.length >= 2) {
-            return parseInt(parts[1], 10) + '월 공지사항';
+            return parts[0] + '년 ' + parseInt(parts[1], 10) + '월 공지사항';
         }
     }
     const monthMatch = notice.title.match(/(\d{1,2})월/);
