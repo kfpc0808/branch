@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>보험 컨설턴트 수수료 시뮬레이터</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+  color:#f7f8fc;
+  background:linear-gradient(180deg,#070b16 0%,#0b1222 44%,#10182c 100%);
+  min-height:100%;
+}
+body{padding:28px}
+.wrap{max-width:1440px;margin:0 auto}
+
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,0.12);border-radius:38px;
+  background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03));
+  box-shadow:0 28px 80px rgba(0,0,0,0.38);
+  padding:42px 44px 34px;margin-bottom:24px;
+}
+.hero:before,.hero:after{content:"";position:absolute;border-radius:999px;pointer-events:none;filter:blur(8px)}
+.hero:before{width:260px;height:260px;right:-50px;top:-70px;background:radial-gradient(circle,rgba(214,179,106,0.22),transparent 68%)}
+.hero:after{width:280px;height:280px;left:-90px;bottom:-150px;background:radial-gradient(circle,rgba(143,183,255,0.14),transparent 70%)}
+h1{font-size:clamp(32px,4.1vw,64px);line-height:1.08;letter-spacing:-0.04em;max-width:1100px}
+
+.main-grid{display:grid;grid-template-columns:0.95fr 1.05fr;gap:24px;align-items:stretch}
+.panel{border:1px solid rgba(255,255,255,0.12);border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03));box-shadow:0 28px 80px rgba(0,0,0,0.38);padding:30px;overflow:hidden}
+.panel-title{margin:0 0 18px;font-size:26px;font-weight:900;letter-spacing:-0.03em}
+
+.info-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.info-card{border:1px solid rgba(255,255,255,0.12);border-radius:20px;background:rgba(255,255,255,0.04);padding:18px 16px}
+.info-label{color:#f1dba8;font-size:12px;font-weight:800;letter-spacing:0.05em;margin-bottom:8px}
+.info-value{font-size:24px;font-weight:900;letter-spacing:-0.03em;margin-bottom:8px}
+.info-text{color:#b6bfd2;font-size:13px;line-height:1.65}
+
+.field{display:grid;gap:8px;margin-bottom:22px}
+.field label{font-size:14px;font-weight:800}
+.input-wrap{position:relative}
+.prefix,.suffix{position:absolute;top:50%;transform:translateY(-50%);font-size:14px;font-weight:800;color:rgba(255,255,255,0.52);pointer-events:none}
+.prefix{left:18px}.suffix{right:18px}
+input[type="text"]{width:100%;height:64px;border-radius:18px;border:1px solid rgba(255,255,255,0.14);background:rgba(7,11,22,0.72);color:#f7f8fc;padding:0 18px;font-size:22px;font-weight:800;outline:none;transition:.2s;box-sizing:border-box}
+.has-prefix input{padding-left:44px}.has-suffix input{padding-right:54px}
+input[type="text"]:focus{border-color:rgba(214,179,106,0.58);box-shadow:0 0 0 6px rgba(214,179,106,0.10)}
+
+.stepper{display:grid;grid-template-columns:70px 1fr 70px;gap:12px;align-items:center}
+.step-btn{height:64px;border-radius:18px;border:1px solid rgba(255,255,255,0.14);background:rgba(7,11,22,0.78);color:#f7f8fc;font-size:30px;font-weight:700;cursor:pointer;transition:.2s}
+.step-btn:hover{border-color:rgba(214,179,106,0.40);background:rgba(214,179,106,0.08);transform:translateY(-1px)}
+
+.logic{display:grid;gap:12px;margin-top:10px}
+.logic-item{display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:14px;background:rgba(255,255,255,0.03)}
+.logic-num{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;flex:0 0 auto;color:#111827;background:linear-gradient(135deg,#f1dba8,#d6b36a);font-size:13px;font-weight:900}
+.logic-item strong{display:block;font-size:15px;margin-bottom:5px}
+.logic-item span{color:#b6bfd2;font-size:13px;line-height:1.65}
+
+.note-bar{margin-top:16px;border:1px solid rgba(143,183,255,0.16);background:rgba(143,183,255,0.08);color:#eaf1ff;border-radius:18px;padding:16px 18px;font-size:14px;line-height:1.8}
+.note-bar strong{color:#fff}
+
+.results{display:grid;grid-template-columns:1fr 1fr;gap:16px;height:100%}
+.result-card{border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03));min-height:140px}
+.result-card.wide{grid-column:1/-1}
+.result-label{color:#f1dba8;font-size:12px;font-weight:900;letter-spacing:0.06em;margin-bottom:10px}
+.result-text{color:#b6bfd2;font-size:14px;line-height:1.7;margin-bottom:12px}
+.result-value{font-size:clamp(28px,2.7vw,48px);font-weight:900;letter-spacing:-0.045em;line-height:1.08}
+.monthly{border-color:rgba(214,179,106,0.22);background:linear-gradient(135deg,rgba(214,179,106,0.10),rgba(255,255,255,0.04))}
+.annual{border-color:rgba(214,179,106,0.34);background:linear-gradient(135deg,rgba(214,179,106,0.20),rgba(255,255,255,0.04));box-shadow:inset 0 0 0 1px rgba(214,179,106,0.09)}
+.annual .result-value{color:#f1dba8;font-size:clamp(34px,3.8vw,64px);text-shadow:0 0 24px rgba(214,179,106,0.18)}
+.market .result-value{font-size:clamp(26px,2.3vw,42px)}
+
+@media(max-width:1180px){.main-grid{grid-template-columns:1fr}}
+@media(max-width:780px){
+  body{padding:14px}
+  .hero{padding:30px 20px 24px;border-radius:24px}
+  .panel{padding:20px;border-radius:24px}
+  h1{font-size:28px}
+  .info-row{grid-template-columns:1fr}
+  .results{grid-template-columns:1fr}
+  .result-card.wide{grid-column:auto}
+  .stepper{grid-template-columns:56px 1fr 56px}
+  .step-btn,input[type="text"]{height:56px}
+  input[type="text"]{font-size:18px}
+  .annual .result-value{font-size:30px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>전체 파이는 같아도<br>사람이 줄어들면 1인당 소득은 커집니다.</h1>
+  </section>
+
+  <section class="main-grid">
+    <div class="panel">
+      <h2 class="panel-title">업계현황</h2>
+
+      <div class="info-row">
+        <div class="info-card">
+          <div class="info-label">현재 등록 인원</div>
+          <div class="info-value">450,000명</div>
+          <div class="info-text">현재 시장 전체 참여 인원 기준</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">증감 단위</div>
+          <div class="info-value">50,000명</div>
+          <div class="info-text">플러스·마이너스로 간편 조정</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">핵심 포인트</div>
+          <div class="info-value">소득 집중</div>
+          <div class="info-text">남는 인원이 줄수록 1인당 몫 확대</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="avgCommission">월평균 수수료</label>
+        <div class="input-wrap has-prefix has-suffix">
+          <span class="prefix">₩</span>
+          <input id="avgCommission" type="text" inputmode="numeric" placeholder="예: 3,000,000"/>
+          <span class="suffix">원</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="remainingPeople">미래에 남아 있을 인원</label>
+        <div class="stepper">
+          <button class="step-btn" id="minusBtn" type="button">−</button>
+          <div class="input-wrap has-suffix">
+            <input id="remainingPeople" type="text" inputmode="numeric" value="450,000"/>
+            <span class="suffix">명</span>
+          </div>
+          <button class="step-btn" id="plusBtn" type="button">+</button>
+        </div>
+      </div>
+
+      <div class="logic">
+        <div class="logic-item"><div class="logic-num">1</div><div><strong>전체 월 수수료 계산</strong><span>월평균 수수료 × 45만 명</span></div></div>
+        <div class="logic-item"><div class="logic-num">2</div><div><strong>미래 1인당 월 소득 계산</strong><span>전체 월 수수료 ÷ 미래 생존 인원</span></div></div>
+        <div class="logic-item"><div class="logic-num">3</div><div><strong>미래 1인당 연 소득 계산</strong><span>미래 1인당 월 소득 × 12</span></div></div>
+      </div>
+
+      <div class="note-bar">핵심은 <strong>시장이 사라지느냐</strong>가 아니라, <strong>누가 끝까지 남아 그 파이를 나눠 갖느냐</strong>입니다.</div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">결과</h2>
+      <div class="results">
+        <div class="result-card wide market">
+          <div class="result-label">전체 월 수수료</div>
+          <div class="result-text">월평균 수수료 × 450,000명</div>
+          <div class="result-value" id="totalMarketIncome">₩ 0</div>
+        </div>
+        <div class="result-card monthly">
+          <div class="result-label">미래 1인당 월 소득</div>
+          <div class="result-text">전체 월 수수료 ÷ 미래 생존 인원</div>
+          <div class="result-value" id="futureIncome">₩ 0</div>
+        </div>
+        <div class="result-card annual">
+          <div class="result-label">미래 1인당 연 소득</div>
+          <div class="result-text">미래 1인당 월 소득 × 12</div>
+          <div class="result-value" id="futureYearIncome">₩ 0</div>
+        </div>
+        <div class="result-card wide">
+          <div class="result-label">현재 대비 증가 배수</div>
+          <div class="result-text">미래 1인당 월 소득 ÷ 현재 월평균 수수료</div>
+          <div class="result-value" id="incomeMultiple">0배</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var T=450000,S=50000,M=50000;
+  var aC=document.getElementById('avgCommission'),rP=document.getElementById('remainingPeople');
+  var oTM=document.getElementById('totalMarketIncome'),oFI=document.getElementById('futureIncome');
+  var oFY=document.getElementById('futureYearIncome'),oMU=document.getElementById('incomeMultiple');
+
+  function n(v){return String(v).replace(/[^\d]/g,'')}
+  function f(v){return Number(v||0).toLocaleString('ko-KR')}
+  function w(v){return '\u20a9 '+Number(v||0).toLocaleString('ko-KR')}
+
+  function calc(){
+    var a=Number(n(aC.value)),r=Number(n(rP.value));
+    var tm=a?a*T:0;
+    oTM.textContent=w(Math.round(tm));
+    if(!a||!r){oFI.textContent='\u20a9 0';oFY.textContent='\u20a9 0';oMU.textContent='0\ubc30';return}
+    var fi=tm/r,fy=fi*12,mu=fi/a;
+    oFI.textContent=w(Math.round(fi));
+    oFY.textContent=w(Math.round(fy));
+    oMU.textContent=mu.toFixed(1).replace(/\.0$/,'')+'\ubc30';
+  }
+
+  function setR(v){v=Math.max(M,v);rP.value=f(v);calc()}
+
+  aC.addEventListener('input',function(e){var r=n(e.target.value);e.target.value=r?f(r):'';calc()});
+  rP.addEventListener('input',function(e){var r=n(e.target.value);e.target.value=r?f(r):'';calc()});
+  document.getElementById('minusBtn').addEventListener('click',function(){setR((Number(n(rP.value))||T)-S)});
+  document.getElementById('plusBtn').addEventListener('click',function(){setR((Number(n(rP.value))||T)+S)});
+  calc();
+})();
+</script>
+</body>
+</html>
